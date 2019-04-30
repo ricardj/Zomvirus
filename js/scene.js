@@ -10,7 +10,7 @@ function render(){
 
   cameraControl.update();
   scene.getObjectByName('earth').rotation.y += 0.005;
-
+  scene.getObjectByName('clouds').rotation.y += 0.003;
 
   requestAnimationFrame(render);
 }
@@ -64,12 +64,23 @@ function createPlane() {
 }
 
 function createLight(){
+
+  /*
   var spotLight = new THREE.SpotLight(0xffffff);
   spotLight.position.set(10,20,20);
   spotLight.shadow.camera.near = 20;
   spotLight.shadow.camera.far = 50;
   spotLight.castShadow = true;
   scene.add(spotLight);
+*/
+
+  var directionalLight = new THREE.DirectionalLight(0xffffff,1);
+  directionalLight.position.set(100,10,-50);
+  directionalLight.name = 'directional';
+  scene.add(directionalLight);
+
+  var ambientLight = new THREE.AmbientLight(0x111111);
+  scene.add(ambientLight);
 }
 
 function createEarthMaterial() {
@@ -81,8 +92,26 @@ function createEarthMaterial() {
 
   });
 
-  var earthMaterial = new THREE.MeshBasicMaterial();
+  var earthNormalTexture  = new THREE.Texture();
+  loader.load('assets/earth_normalmap_flat2k.jpg', function (image){
+    earthNormalTexture.image = image;
+    earthNormalTexture.needsUpdate = true;
+  });
+
+
+  var earthSpecularTexture= new THREE.Texture();
+  loader.load('assets/earthspec2k.jpg', function (image){
+    earthSpecularTexture.image = image;
+    earthSpecularTexture.needsUpdate = true;
+  });
+
+
+  var earthMaterial = new THREE.MeshPhongMaterial();
   earthMaterial.map = earthTexture;
+  earthMaterial.normalMap = earthNormalTexture;
+  earthMaterial.normalScale = new THREE.Vector2(1.0,1.0);
+  earthMaterial.specularMap = earthSpecularTexture;
+  earthMaterial.specular = new THREE.Color(0x262626);
 
   return earthMaterial;
 }
@@ -95,6 +124,39 @@ function createEarth(){
   scene.add(earthMesh);
 }
 
+function createCloudsMaterial(){
+  var cloudsTexture = new THREE.Texture();
+  var loader = new THREE.ImageLoader();
+  loader.load('assets/fair_clouds_1k.png', function(image){
+    cloudsTexture.image = image;
+    cloudsTexture.needsUpdate = true;
+  });
+  var cloudMaterial = new THREE.MeshBasicMaterial();
+  cloudMaterial.map = cloudsTexture;
+  cloudMaterial.transparent = true;
+  return cloudMaterial;
+}
+
+function createClouds () {
+  var sphereGeometry = new THREE.SphereGeometry(15.1,30,30);
+  var sphereMaterial = createCloudsMaterial();
+  var cloudsMesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
+  cloudsMesh.name = 'clouds';
+  scene.add(cloudsMesh);
+}
+
+function createEnvironment(){
+  var envGeometry = new THREE.SphereGeometry(90, 32, 32);
+  var envMaterial = new THREE.MeshBasicMaterial();
+  envMaterial.map = THREE.ImageUtils.loadTexture('assets/galaxy_starfield.png');
+
+  envMaterial.side = THREE.BackSide;
+
+  var mesh = new THREE.Mesh(envGeometry, envMaterial);
+  scene.add(mesh);
+
+}
+
 function init() {
 
   scene = new THREE.Scene();
@@ -103,7 +165,9 @@ function init() {
   //createBox();
   //createPlane();
   createEarth();
+  createClouds();
   createLight();
+  createEnvironment();
   document.body.appendChild(renderer.domElement);
   render();
 }
