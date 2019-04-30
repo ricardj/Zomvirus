@@ -2,17 +2,10 @@ var renderer;
 var scene;
 var camera;
 
-function init() {
-
-  scene = new THREE.Scene();
-  createRenderer();
-  createCamera();
-  render();
-}
 
 function render(){
   console.log("Request animation frame for render");
-  //renderer.render(scene, camera);
+  renderer.render(scene, camera);
 
   requestAnimationFrame(render);
 }
@@ -45,7 +38,41 @@ function createBox(){
   box.castShadow = true;
 
   scene.add(box);
-  
+
 }
 
-//init();
+function createPlane() {
+  var planeGeometry = new THREE.PlaneGeometry(20,20);
+  var planeMaterial = new THREE.MeshLambertMaterial({
+    color : 0xcccccc
+  });
+
+  var plane = new THREE.Mesh(planeGeometry, planeMaterial);
+  plane.receiveShadow = true;
+  plane.rotation.x = -0.5 * Math.PI;
+  plane.position.y = -2;
+  scene.add(plane);
+}
+
+function createLight(){
+  var spotLight = new THREE.SpotLight(0xffffff);
+  spotLight.position.set(10,20,20);
+  spotLight.shadow.camera.near = 20;
+  spotLight.shadow.camera.far = 50;
+  spotLight.castShadow = true;
+  scene.add(spotLight);
+}
+
+
+function init() {
+
+  scene = new THREE.Scene();
+  createRenderer();
+  createCamera();
+  createBox();
+  createLight();
+  createPlane();
+  render();
+}
+
+init();
