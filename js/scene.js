@@ -3,14 +3,16 @@ var scene;
 var camera;
 var cameraControl;
 
+var head = undefined;
 
 function render(){
   //console.log("Request animation frame for render");
   renderer.render(scene, camera);
 
   cameraControl.update();
-  scene.getObjectByName('earth').rotation.y += 0.005;
-  scene.getObjectByName('clouds').rotation.y += 0.003;
+
+  //scene.getObjectByName('earth').rotation.y += 0.005;
+  //scene.getObjectByName('clouds').rotation.y += 0.003;
 
   requestAnimationFrame(render);
 }
@@ -157,6 +159,30 @@ function createEnvironment(){
 
 }
 
+
+//We load LEE
+function createHead(){
+  var material = new THREE.MeshPhongMaterial();
+  loader = new THREE.OBJLoader();
+
+  loader.load('assets/lee.obj', function(object){
+
+    //mesh file may contain many meshes
+    //In this cas it only contaons one
+    object.traverse(function(child){      //Traverse gets through all meshes applying the callbacl
+      if(child instanceof THREE.Mesh){
+        child.material = material;
+        child.receiveShadow = true;
+        child.castShadow = true;
+        child.name ="lee";
+        head = child;
+      }
+    });
+    scene.add(object);
+  });
+
+}
+
 function init() {
 
   scene = new THREE.Scene();
@@ -164,8 +190,9 @@ function init() {
   createCamera();
   //createBox();
   //createPlane();
-  createEarth();
-  createClouds();
+  //createEarth();
+  //createClouds();
+  createHead();
   createLight();
   createEnvironment();
 
@@ -175,3 +202,18 @@ function init() {
 }
 
 init();
+
+window.addEventListener('keydown', function(e){
+  switch (e.key) {
+    case "a":
+      if(head)
+        head.rotation.y += 0.05;
+      break;
+    case "d":
+      if(head)
+        head.rotation.y -= 0.05;
+      break;
+    default:
+
+  }
+});
