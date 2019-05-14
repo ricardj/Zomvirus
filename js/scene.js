@@ -5,7 +5,7 @@ var cameraControl;
 
 
 function render(){
-  console.log("Request animation frame for render");
+  //console.log("Request animation frame for render");
   renderer.render(scene, camera);
 
   cameraControl.update();
@@ -131,7 +131,7 @@ function createCloudsMaterial(){
     cloudsTexture.image = image;
     cloudsTexture.needsUpdate = true;
   });
-  var cloudMaterial = new THREE.MeshBasicMaterial();
+  var cloudMaterial =  new THREE.MeshPhongMaterial();
   cloudMaterial.map = cloudsTexture;
   cloudMaterial.transparent = true;
   return cloudMaterial;
@@ -168,7 +168,9 @@ function init() {
   createClouds();
   createLight();
   createEnvironment();
+
   document.body.appendChild(renderer.domElement);
+
   render();
 }
 
