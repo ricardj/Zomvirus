@@ -33,6 +33,7 @@ function MainLevel(renderer){
     this.renderer = renderer;
     this.scene = new Physijs.Scene();
     this.updatable_assets = [];
+    
     createLight();
     createCamera();
     createEnvironment();
