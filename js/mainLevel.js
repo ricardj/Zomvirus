@@ -15,11 +15,11 @@ function Character (){
 function Environment(){
     this.geometry = new THREE.SphereGeometry(90, 32, 32);
     this.material = new THREE.MeshBasicMaterial();
-    this.material.map = THREE.ImageUtils.loadTexture('assets/galaxy_starfield.png');
+    this.material.map = THREE.ImageUtils.loadTexture('assets/images/galaxy_starfield.png');
   
     this.material.side = THREE.BackSide;
     this.material.depthTest = false;
-      this.material.depthWrite = false;
+    this.material.depthWrite = false;
   
     this.mesh = new THREE.Mesh(this.geometry,this.material);
 
