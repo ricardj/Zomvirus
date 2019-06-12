@@ -8,7 +8,7 @@ var renderer;
 var introLevel;
 var mainLevel;
 
-var currentLevel = 0;
+var currentLevel = 1;
 function render(){
 
 	if (currentLevel == 0){
