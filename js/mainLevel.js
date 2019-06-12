@@ -15,6 +15,7 @@ function rotateAroundWorldAxis(object, axis, radians) {
 }
 
 
+var character = null;
 function Character (){
     this.geometry = new THREE.BoxGeometry( 10, 10, 10 );
     this.material = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
@@ -78,6 +79,8 @@ function Enemy() {
         this.mesh.__dirtyPosition = true;
 
     }
+    character = this;
+
 }
 
 
@@ -98,6 +101,9 @@ function Environment(){
 }
 
 function MainLevel(renderer){
+    
+
+
     var oThis = this;
     this.renderer = renderer;
     
@@ -105,6 +111,10 @@ function MainLevel(renderer){
     this.scene.updateMatrixWorld(true);
     
     this.updatable_assets = [];
+
+    oThis.scale = 1;
+    oThis.mouseX = 0;
+    oThis.mouseY = 0;
     
     createLight();
     createCamera();
@@ -126,15 +136,18 @@ function MainLevel(renderer){
     }
 
     function createCamera (){
+        //puede que esta linea haya que canviarla
   
         //Camera one
         oThis.camera = new THREE.PerspectiveCamera(
           60,
           window.innerWidth/ window.innerHeight,
           0.1, 1000);
+      //  oThis.camera.rotation.order = "YXZ"; // this is not the default
+
         oThis.camera.position.x = 0;
-        oThis.camera.position.y =  20;
-        oThis.camera.position.z = -40;
+        oThis.camera.position.y =  0;
+        oThis.camera.position.z = 0;
       
         oThis.camera.lookAt( oThis.scene.position );
 
@@ -232,3 +245,38 @@ function MainLevel(renderer){
         
     }
 }
+
+
+
+MainLevel.prototype.mouseMove = function(x, y ) {
+   // console.log(this.mouseX);
+    this.mouseX = - ( x / this.renderer.domElement.clientWidth ) * 2 + 1;
+    this.mouseY = - ( y / this.renderer.domElement.clientHeight ) * 2 + 1;
+
+    this.camera.rotation.x = this.mouseY / this.scale;
+    this.camera.rotation.y = this.mouseX / this.scale;
+    console.log(this.mouseX);
+
+
+}
+
+
+window.addEventListener("keydown", function(e){
+    if(character){
+        //alert("a");
+      switch(e.key){
+        case'w':
+          head.position += (head)
+        case'a':
+          head.rotation.y += 0.01;
+          break;
+        case'd':
+          head.rotation.y -= 0.01;
+          break;
+      }
+    }
+  });
+
+
+  
+

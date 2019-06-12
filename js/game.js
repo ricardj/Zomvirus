@@ -40,6 +40,7 @@ function init() {
 }
 
 
+
 document.getElementById('new_game').onclick = function() {
 	//We set all the interface to invisible
 	document.getElementById('interface').style = "display:none";
@@ -49,3 +50,7 @@ document.getElementById('new_game').onclick = function() {
 }
 
 init();
+
+function updateCameraRotation(event){
+	mainLevel.mouseMove(event.clientX, event.clientY);
+}
