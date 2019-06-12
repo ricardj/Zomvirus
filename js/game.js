@@ -52,5 +52,5 @@ document.getElementById('new_game').onclick = function() {
 init();
 
 function updateCameraRotation(event){
-	mainLevel.mouseMove(event.clientX, event.clientY);
+	//mainLevel.mouseMove(event.clientX, event.clientY);
 }

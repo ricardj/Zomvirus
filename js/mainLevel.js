@@ -1,32 +1,132 @@
 //Some globals for the level
 
 var playerPosition = new THREE.Vector3(); //Used by the enemies to followw the player
+var renderer;         //Used by the camera fps and the main level
 
 
-var rotWorldMatrix;
+function FirstPersonCamera(){
+    var oThis = this;
+    this.camera = new THREE.PerspectiveCamera(
+        60,
+        window.innerWidth/ window.innerHeight,
+        0.1, 1000);
+      //oThis.camera.rotation.order = "YXZ"; // this is not the default
 
-// Rotate an object around an arbitrary axis in world space       
-function rotateAroundWorldAxis(object, axis, radians) {
-    rotWorldMatrix = new THREE.Matrix4();
-    rotWorldMatrix.makeRotationAxis(axis.normalize(), radians);
-    rotWorldMatrix.multiply(object.matrix);        // pre-multiply
-    object.matrix = rotWorldMatrix;
-    object.rotation.setFromRotationMatrix(object.matrix);
+    this.camera.position.x = 0;
+    this.camera.position.y = 10;
+    this.camera.position.z = 0;
+    
+    
+    this.moveForward = false;
+    this.moveBackward = false;
+    this.moveLeft = false;
+    this.moveRight = false;
+    this.canJump = false;
+    this.prevTime = performance.now();
+    this.velocity = new THREE.Vector3();
+    this.direction = new THREE.Vector3();
+    this.controls;
+
+    this.controls = new THREE.PointerLockControls(this.camera);
+
+    renderer.domElement.addEventListener( 'click', function () {
+        oThis.controls.lock();
+    }, false );
+    
+    this.onKeyDown = function ( event ) {
+        switch ( event.keyCode ) {
+            case 38: // up
+            case 87: // w
+                oThis.moveForward = true;
+                break;
+            case 37: // left
+            case 65: // a
+                oThis.moveLeft = true;
+                break;
+            case 40: // down
+            case 83: // s
+                oThis.moveBackward = true;
+                break;
+            case 39: // right
+            case 68: // d
+                oThis.moveRight = true;
+                break;
+            case 32: // space
+                if ( oThis.canJump === true ) oThis.velocity.y += 350;
+                oThis.canJump = false;
+                break;
+        }
+    };
+    this.onKeyUp = function ( event ) {
+        switch ( event.keyCode ) {
+            case 38: // up
+            case 87: // w
+                oThis.moveForward = false;
+                break;
+            case 37: // left
+            case 65: // a
+                oThis.moveLeft = false;
+                break;
+            case 40: // down
+            case 83: // s
+                oThis.moveBackward = false;
+                break;
+            case 39: // right
+            case 68: // d
+                oThis.moveRight = false;
+                break;
+        }
+    };
+
+    
+
+    document.addEventListener( 'keydown', this.onKeyDown, false );
+    document.addEventListener( 'keyup', this.onKeyUp, false );
+
+
+    this.update = function (){
+
+        var time = performance.now();
+        var delta = ( time - this.prevTime ) / 1000;
+        this.velocity.x -= this.velocity.x * 10.0 * delta;
+        this.velocity.z -= this.velocity.z * 10.0 * delta;
+        this.velocity.y -= 9.8 * 100.0 * delta; // 100.0 = mass
+        this.direction.z = Number( this.moveForward ) - Number( this.moveBackward );
+        this.direction.x = Number( this.moveLeft ) - Number( this.moveRight );
+        //direction.normalize(); // this ensures consistent movements in all directions
+
+        if ( this.moveForward || this.moveBackward ) this.velocity.z -= this.direction.z * 400.0 * delta;
+        if ( this.moveLeft || this.moveRight ) this.velocity.x -= this.direction.x * 400.0 * delta;
+
+        var onObject = false;
+        if ( onObject === true ) {
+            this.velocity.y = Math.max( 0, this.velocity.y );
+            this.canJump = true;
+        }
+        this.controls.getObject().translateX( this.velocity.x * delta );
+        this.controls.getObject().position.y += ( this.velocity.y * delta ); // new behavior
+        this.controls.getObject().translateZ( this.velocity.z * delta );
+        if ( this.controls.getObject().position.y < 10 ) {
+            this.velocity.y = 0;
+            this.controls.getObject().position.y = 10;
+            this.canJump = true;
+        }
+        this.prevTime = time;
+    }
+
 }
 
-
-var character = null;
 function Character (){
     this.geometry = new THREE.BoxGeometry( 10, 10, 10 );
     this.material = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
     this.mesh = new Physijs.BoxMesh( this.geometry, this.material, 1000 );
-    this.mesh.position.set(0, 10, 0);
+    this.mesh.position.set(0, 30, 0);
     
     this.handleCollision = function( other_object, relative_velocity, relative_rotation, contact_normal ) {
         // `this` has collided with `other_object` with an impact speed of `relative_velocity` and a rotational force of `relative_rotation` and at normal `contact_normal`
-        console.log("The mesh is colliding");
+        //console.log("The mesh is colliding");
         if(other_object.name ==  "enemy"){
-            console.log("Dammit! the enemy killed me");
+            //console.log("Dammit! the enemy killed me");
         }
     }
 
@@ -34,7 +134,6 @@ function Character (){
 
     this.lookAtVector = new THREE.Vector3(0,0,0);
     this.update = function(){
-        
         playerPosition.setFromMatrixPosition( this.mesh.matrixWorld );
     }
 }
@@ -54,9 +153,7 @@ function Enemy() {
     this.mesh = new Physijs.ConvexMesh(this.geometry, this.material, 3000);
     this.mesh.name = "enemy";
     
-    
     this.mesh.position.set(20,0,10);
-    //rotateAroundWorldAxis(this.mesh, new THREE.Vector3(1,1,0), 45 * Math.PI/180);
     
     this.update = function(){
         
@@ -70,7 +167,9 @@ function Enemy() {
 
         
         var newPosition = new THREE.Vector3(this.mesh.position.x,this.mesh.position.y,this.mesh.position.z);
-        direction = playerPosition.sub(newPosition);
+        var playerPositionCopy = new THREE.Vector3();
+        playerPositionCopy.copy(playerPosition);
+        direction = playerPositionCopy.sub(newPosition);
         direction.normalize();
         direction.y = 0;
         direction.multiplyScalar(0.10);
@@ -87,7 +186,7 @@ function Enemy() {
 function Environment(){
     this.geometry = new THREE.SphereGeometry(90, 32, 32);
     this.material = new THREE.MeshBasicMaterial();
-    this.material.map = THREE.ImageUtils.loadTexture('assets/images/galaxy_starfield.png');
+    this.material.map = THREE.ImageUtils.loadTexture('assets/images/skybox_1.jpg');
   
     this.material.side = THREE.BackSide;
     this.material.depthTest = false;
@@ -100,14 +199,14 @@ function Environment(){
     }
 }
 
-function MainLevel(renderer){
+function MainLevel(foreignRenderer){
     
-
-
     var oThis = this;
-    this.renderer = renderer;
+    renderer = foreignRenderer;
+    this.renderer = foreignRenderer;
     
     this.scene = new Physijs.Scene();
+    this.scene.fog = new THREE.Fog( 0x000000, 0, 200 );
     this.scene.updateMatrixWorld(true);
     
     this.updatable_assets = [];
@@ -125,50 +224,53 @@ function MainLevel(renderer){
     
     this.render = function() {
         
-        
         var e;
         for (e in this.updatable_assets){
             this.updatable_assets[e].update();
         }
-        
+        this.scene.updateMatrixWorld(true);
         this.scene.simulate();
         this.renderer.render(this.scene,this.camera);
     }
 
     function createCamera (){
-        //puede que esta linea haya que canviarla
   
-        //Camera one
-        oThis.camera = new THREE.PerspectiveCamera(
-          60,
-          window.innerWidth/ window.innerHeight,
-          0.1, 1000);
-      //  oThis.camera.rotation.order = "YXZ"; // this is not the default
+        //Free camera
+        /*
+            oThis.camera = new THREE.PerspectiveCamera(
+            60,
+            window.innerWidth/ window.innerHeight,
+            0.1, 1000);
+            //oThis.camera.rotation.order = "YXZ"; // this is not the default
 
-        oThis.camera.position.x = 0;
-        oThis.camera.position.y =  0;
-        oThis.camera.position.z = 0;
-      
-        oThis.camera.lookAt( oThis.scene.position );
+            oThis.camera.position.x = 0;
+            oThis.camera.position.y = 10;
+            oThis.camera.position.z = 0;
+        
+            oThis.camera.lookAt( oThis.scene.position );
 
-        //camera 2
-        // Orbit Controls >
-        var controls = new THREE.OrbitControls( oThis.camera );
-        // I prefer to swap the mouse controls, but most examples out there don't:
-        controls.mouseButtons = {
-            ORBIT: THREE.MOUSE.RIGHT,
-            ZOOM: THREE.MOUSE.MIDDLE,
-            PAN: THREE.MOUSE.LEFT
-        };
-        controls.enableDamping = true; // For that slippery Feeling
-        controls.dampingFactor = 0.12; // Needs to call update on render loop 
-        controls.rotateSpeed = 0.08; // Rotate speed
-        controls.autoRotate = false; // turn this guy to true for a spinning camera
-        controls.autoRotateSpeed = 0.08; // 30
-        controls.maxPolarAngle = Math.PI/2; // Don't let to go below the ground
-        // < Orbit Controls
+            //camera 2
+            // Orbit Controls >
+            var controls = new THREE.OrbitControls( oThis.camera );
+            // I prefer to swap the mouse controls, but most examples out there don't:
+            controls.mouseButtons = {
+                ORBIT: THREE.MOUSE.RIGHT,
+                ZOOM: THREE.MOUSE.MIDDLE,
+                PAN: THREE.MOUSE.LEFT
+            };
+            controls.enableDamping = true; // For that slippery Feeling
+            controls.dampingFactor = 0.12; // Needs to call update on render loop 
+            controls.rotateSpeed = 0.08; // Rotate speed
+            controls.autoRotate = false; // turn this guy to true for a spinning camera
+            controls.autoRotateSpeed = 0.08; // 30
+            controls.maxPolarAngle = Math.PI/2; // Don't let to go below the ground
+            // < Orbit Controls
+        */
 
-      
+        //fps camera
+        var fps_camera =new FirstPersonCamera(); 
+        oThis.camera = fps_camera.camera;
+        oThis.updatable_assets.push(fps_camera);
     }
       
     function createPlatform(){
@@ -177,7 +279,7 @@ function MainLevel(renderer){
         texture.wrapT = THREE.RepeatWrapping;
         texture.repeat.set( 4, 4 );
 
-        var geometry = new THREE.PlaneGeometry(200,200);
+        var geometry = new THREE.PlaneGeometry(1000,1000);
         var material = new THREE.MeshStandardMaterial({
           map: texture
         });
@@ -229,7 +331,7 @@ function MainLevel(renderer){
       
     function createCharacter(){
         oThis.character = new Character();
-        oThis.character.mesh.add(oThis.environment.mesh);
+        //oThis.character.mesh.add(oThis.environment.mesh);
         oThis.updatable_assets.push(oThis.character);
         oThis.scene.add(oThis.character.mesh);
     }
@@ -245,38 +347,3 @@ function MainLevel(renderer){
         
     }
 }
-
-
-
-MainLevel.prototype.mouseMove = function(x, y ) {
-   // console.log(this.mouseX);
-    this.mouseX = - ( x / this.renderer.domElement.clientWidth ) * 2 + 1;
-    this.mouseY = - ( y / this.renderer.domElement.clientHeight ) * 2 + 1;
-
-    this.camera.rotation.x = this.mouseY / this.scale;
-    this.camera.rotation.y = this.mouseX / this.scale;
-    console.log(this.mouseX);
-
-
-}
-
-
-window.addEventListener("keydown", function(e){
-    if(character){
-        //alert("a");
-      switch(e.key){
-        case'w':
-          head.position += (head)
-        case'a':
-          head.rotation.y += 0.01;
-          break;
-        case'd':
-          head.rotation.y -= 0.01;
-          break;
-      }
-    }
-  });
-
-
-  
-
