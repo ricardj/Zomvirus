@@ -295,6 +295,7 @@ function MainLevel(foreignRenderer){
     createEnvironment();
     createCharacter();
     createPlatform();
+    createFloor();
     createEnemies();
     createBulletManager();
     
@@ -428,5 +429,42 @@ function MainLevel(foreignRenderer){
             oThis.updatable_assets.push(enemy);
             oThis.scene.add(enemy.mesh);
         }
+    }
+
+    function createFloor(){
+        //We readd the mesh
+        loader = new THREE.OBJLoader();
+
+        loader.load('assets/models/nivel4.obj', function(object){
+
+            //mesh file may contain many meshes
+            //In this cas it only contaons one
+            var box = 40;
+            var i = 0;
+            ///console.log(object);
+            object.traverse(function(child){      //Traverse gets through all meshes applying the callbacl
+                if(child instanceof THREE.Mesh){
+                    //child.material = material;
+                    console.log(child);
+                    child.receiveShadow = true;
+                    child.castShadow = true;
+                    head = child;
+                    if(child.name != "Object001" && i < box){
+                        i++;
+                        var element = new Physijs.BoxMesh(child.geometry,child.material,0);
+                        element.position.y;
+                        oThis.scene.add(element);
+                    }
+                    
+                }
+            });
+            // console.log(object);
+            // var child = object.children[0];
+            // console.log(child);
+            // var element = new Physijs.BoxMesh(child.geometry,child.material);
+            // oThis.scene.add(element);
+            
+        });
+
     }
 }
