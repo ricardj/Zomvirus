@@ -204,28 +204,28 @@ function BulletManager(level){
     this.bullets = [];
     this.mainLevel = level;
 
-    function addBullet (){
+    this.addBullet = function (){
         let bullet = new THREE.Mesh(
             new THREE.SphereGeometry(0.05,8,8),
             new THREE.MeshBasicMaterial({color:0xffffff})
         );
-        let c = oThis.mainLevel.camera.camera;
-        alert(c.position.x);
+        let c = oThis.mainLevel.camera;
+        console.log(c.position.x);
 
         bullet.position.set(
             /*meshes["playerweapon"].position.x,
             meshes["playerweapon"].position.y + 0.15,
             meshes["playerweapon"].position.z*/
-            this.camera.oThis.camera.position.x,
-            this.camera.oThis.camera.position.y,
-            this.camera.oThis.camera.position.z
+            c.position.x,
+            c.position.y,
+            c.position.z
         );
         
         // set the velocity of the bullet
         bullet.velocity = new THREE.Vector3(
-            -Math.sin(this.camera.rotation.y),
+            -Math.sin(c.rotation.y),
             0,
-            Math.cos(this.camera.rotation.y)
+            Math.cos(c.rotation.y)
         );
         
         // after 1000ms, set alive to false and remove from scene
@@ -234,7 +234,7 @@ function BulletManager(level){
         bullet.alive = true;
         setTimeout(function(){
             bullet.alive = false;
-            scene.remove(bullet);
+            oThis.mainLevel.scene.remove(bullet);
         }, 1000);
         
         // add to scene, array, and set the delay to 10 frames
@@ -266,7 +266,7 @@ function BulletManager(level){
 
         if(shooting){
             console.log("ddd");
-            addBullet();
+            this.addBullet();
             shooting = false;
         }
 
