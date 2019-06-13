@@ -8,7 +8,7 @@ var renderer;
 var introLevel;
 var mainLevel;
 
-var currentLevel = 1;
+var currentLevel = 0;
 function render(){
 
 	if (currentLevel == 0){
@@ -30,7 +30,6 @@ function createRenderer() {
 }
 
 function init() {
-
 	createRenderer();
 	//createIntroLevel();
 	introLevel = new IntroLevel(renderer);

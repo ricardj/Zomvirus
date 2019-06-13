@@ -16,6 +16,8 @@ div#interface {
 }
 
 #title {
+    font-family: 'Iceland', cursive;
+    font-size: 200px;
     grid-column: 2;
     grid-row: 2;
 }
@@ -23,4 +25,16 @@ div#interface {
 #menu {
     grid-column: 2;
     grid-row: 3;
+    text-align: center;
+}
+
+#new_game {
+    font-family: 'Orbitron', sans-serif;
+    color:white;
+    font-size: 1.5em;
+}
+#new_game:hover { 
+    COLOR: blue; 
+    TEXT-DECORATION: none; 
+    font-weight: none;
 }
