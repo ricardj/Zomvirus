@@ -2,6 +2,9 @@
 
 var playerPosition = new THREE.Vector3(); //Used by the enemies to followw the player
 var renderer;         //Used by the camera fps and the main level
+var canShoot = 20;
+var shooting = true;
+
 
 
 function FirstPersonCamera(){
@@ -10,7 +13,6 @@ function FirstPersonCamera(){
         60,
         window.innerWidth/ window.innerHeight,
         0.1, 1000);
-      //oThis.camera.rotation.order = "YXZ"; // this is not the default
 
     this.camera.position.x = 0;
     this.camera.position.y = 10;
@@ -83,9 +85,7 @@ function FirstPersonCamera(){
     document.addEventListener( 'keydown', this.onKeyDown, false );
     document.addEventListener( 'keyup', this.onKeyUp, false );
 
-
     this.update = function (){
-
         var time = performance.now();
         var delta = ( time - this.prevTime ) / 1000;
         this.velocity.x -= this.velocity.x * 10.0 * delta;
@@ -137,7 +137,6 @@ function Character (){
         playerPosition.setFromMatrixPosition( this.mesh.matrixWorld );
     }
 }
-
 
 function Enemy() {
 
@@ -199,12 +198,88 @@ function Environment(){
     }
 }
 
+
+function BulletManager(level){
+    var oThis = this;
+    this.bullets = [];
+    this.mainLevel = level;
+
+    function addBullet (){
+        let bullet = new THREE.Mesh(
+            new THREE.SphereGeometry(0.05,8,8),
+            new THREE.MeshBasicMaterial({color:0xffffff})
+        );
+        let c = oThis.mainLevel.camera.camera;
+        alert(c.position.x);
+
+        bullet.position.set(
+            /*meshes["playerweapon"].position.x,
+            meshes["playerweapon"].position.y + 0.15,
+            meshes["playerweapon"].position.z*/
+            this.camera.oThis.camera.position.x,
+            this.camera.oThis.camera.position.y,
+            this.camera.oThis.camera.position.z
+        );
+        
+        // set the velocity of the bullet
+        bullet.velocity = new THREE.Vector3(
+            -Math.sin(this.camera.rotation.y),
+            0,
+            Math.cos(this.camera.rotation.y)
+        );
+        
+        // after 1000ms, set alive to false and remove from scene
+        // setting alive to false flags our update code to remove
+        // the bullet from the bullets array
+        bullet.alive = true;
+        setTimeout(function(){
+            bullet.alive = false;
+            scene.remove(bullet);
+        }, 1000);
+        
+        // add to scene, array, and set the delay to 10 frames
+        this.bullets.push(bullet);
+        this.mainLevel.scene.add(bullet);
+        shooting = false;
+    }
+
+    function shoot(){
+        if(shooting == false && canShoot < 0){
+            canShoot = 20;
+            shooting = true;
+        }
+    }
+
+    document.addEventListener( 'mousedown', shoot, false );
+
+
+    this.update = function(){
+        for(var index=0; index<this.bullets.length; index+=1){
+            if( this.bullets[index] === undefined ) continue;
+            if( this.bullets[index].alive == false ){
+                this.bullets.splice(index,1);
+                continue;
+            }
+            
+            this.bullets[index].position.add(this.bullets[index].velocity);
+        }
+
+        if(shooting){
+            console.log("ddd");
+            addBullet();
+            shooting = false;
+        }
+
+        canShoot -= 1;
+    }
+}
+
 function MainLevel(foreignRenderer){
-    
     var oThis = this;
     renderer = foreignRenderer;
     this.renderer = foreignRenderer;
-    
+    this.bullets = [];    
+
     this.scene = new Physijs.Scene();
     this.scene.fog = new THREE.Fog( 0x000000, 0, 200 );
     this.scene.updateMatrixWorld(true);
@@ -221,6 +296,7 @@ function MainLevel(foreignRenderer){
     createCharacter();
     createPlatform();
     createEnemies();
+    createBulletManager();
     
     this.render = function() {
         
@@ -231,6 +307,13 @@ function MainLevel(foreignRenderer){
         this.scene.updateMatrixWorld(true);
         this.scene.simulate();
         this.renderer.render(this.scene,this.camera);
+    }
+
+    function createBulletManager(){
+        var bulletManager = new BulletManager(oThis);
+        this.bulletManager = bulletManager;
+        oThis.updatable_assets.push(bulletManager);
+
     }
 
     function createCamera (){
@@ -270,6 +353,7 @@ function MainLevel(foreignRenderer){
         //fps camera
         var fps_camera =new FirstPersonCamera(); 
         oThis.camera = fps_camera.camera;
+        //oThis.fps = fps.camera;
         oThis.updatable_assets.push(fps_camera);
     }
       
@@ -344,6 +428,5 @@ function MainLevel(foreignRenderer){
             oThis.updatable_assets.push(enemy);
             oThis.scene.add(enemy.mesh);
         }
-        
     }
 }
