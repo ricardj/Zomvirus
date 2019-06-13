@@ -206,7 +206,7 @@ function BulletManager(level){
 
     this.addBullet = function (){
         let bullet = new THREE.Mesh(
-            new THREE.SphereGeometry(0.05,8,8),
+            new THREE.SphereGeometry(20,20,20),
             new THREE.MeshBasicMaterial({color:0xffffff})
         );
         let c = oThis.mainLevel.camera;
@@ -220,12 +220,20 @@ function BulletManager(level){
             c.position.y,
             c.position.z
         );
-        
+        let dir = new THREE.Vector3(); ;
+        c.getWorldDirection(dir);
+        /*console.log(dir.x);
+        console.log(dir.y);
+        console.log(dir.x);*/
+
         // set the velocity of the bullet
         bullet.velocity = new THREE.Vector3(
-            -Math.sin(c.rotation.y),
+            dir.x*5,
+            dir.y*5,
+            dir.z*5
+            /*-Math.sin(c.rotation.y),
             0,
-            Math.cos(c.rotation.y)
+            Math.cos(c.rotation.y)*/
         );
         
         // after 1000ms, set alive to false and remove from scene
