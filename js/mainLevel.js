@@ -192,20 +192,35 @@ function Character (){
 
 function Enemy(id) {
     var oThis = this;
-    this.geometry = new THREE.ConeGeometry( 10,15, 32 );
-    var texture = new THREE.TextureLoader().load( "assets/images/zombie_1.jpg" );
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-    texture.repeat.set( 4, 4 );
-    this.material =new THREE.MeshStandardMaterial({
-        map: texture
-    });
+    
+    loader = new THREE.OBJLoader();
+    this.mesh = new THREE.Mesh();
 
-    this.mesh = new Physijs.ConvexMesh(this.geometry, this.material, 3000);
-    this.mesh.name = "enemy";
-    this.mesh.lives = 3;
-    this.mesh.id = id;
-    this.mesh.position.set(20,0,10);
+    loader.load('assets/models/enemy1.obj', function(object){
+
+        console.log(object);
+        object = object.children[0];
+        var tamanio = 3;
+        var geometry = object.geometry;
+
+        var texture = new THREE.TextureLoader().load( "assets/images/zombie_1.jpg" );
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set( 2, 2 );
+        var material =new THREE.MeshPhysicalMaterial({
+            map: texture,
+            color: 0xF44541,
+            normalMap:texture
+        });
+
+        oThis.mesh = new Physijs.BoxMesh(geometry, material, 3000);
+        oThis.mesh.name = "enemy";
+        oThis.mesh.lives = 3;
+        oThis.mesh.id = id;
+        oThis.mesh.position.set(20,0.1,10);
+        scene.add(oThis.mesh);
+        oThis.mesh.addEventListener( 'collision', oThis.handleCollision );
+    });
 
     this.handleCollision = function( other_object, relative_velocity, relative_rotation, contact_normal ) {
         // `this` has collided with `other_object` with an impact speed of `relative_velocity` and a rotational force of `relative_rotation` and at normal `contact_normal`
@@ -220,7 +235,7 @@ function Enemy(id) {
         }
     }
 
-    this.mesh.addEventListener( 'collision', this.handleCollision );
+    
 
 
 
@@ -284,7 +299,7 @@ function BulletManager(level){
        
         /** ***************************************************/
 
-        var ballMaterial = new THREE.MeshPhongMaterial( { color: 0x202020 } );
+        var ballMaterial = new THREE.MeshToonMaterial( { color: 0x876125 } );
 
         var ballMass = 35;
         var ballRadius = 0.4; 
@@ -444,11 +459,13 @@ function MainLevel(foreignRenderer){
         var texture = new THREE.TextureLoader().load( "assets/images/baldosa_1.jpg" );
         texture.wrapS = THREE.RepeatWrapping;
         texture.wrapT = THREE.RepeatWrapping;
-        texture.repeat.set( 4, 4 );
+        texture.repeat.set( 5, 5 );
 
         var geometry = new THREE.PlaneGeometry(1000,1000);
         var material = new THREE.MeshStandardMaterial({
-          map: texture
+          map: texture,
+          color: 0x4286f4,
+          bumpMap: texture
         });
       
         material.side = THREE.DoubleSide;
@@ -519,34 +536,71 @@ function MainLevel(foreignRenderer){
         //We readd the mesh
         loader = new THREE.OBJLoader();
 
-        loader.load('assets/models/nivel4.obj', function(object){
+        loader.load('assets/models/torre1.obj', function(object){
 
             //mesh file may contain many meshes
             //In this cas it only contaons one
-            var box = 40;
-            var i = 0;
-            ///console.log(object);
-            object.traverse(function(child){      //Traverse gets through all meshes applying the callbacl
-                if(child instanceof THREE.Mesh){
-                    //child.material = material;
-                    console.log(child);
-                    child.receiveShadow = true;
-                    child.castShadow = true;
-                    head = child;
-                    if(child.name != "Object001" && i < box){
-                        i++;
-                        var element = new Physijs.BoxMesh(child.geometry,child.material,0);
-                        element.position.y;
-                        oThis.scene.add(element);
-                    }
-                    
-                }
-            });
+            // var box = 10;
+            // var i = 0;
             // console.log(object);
-            // var child = object.children[0];
-            // console.log(child);
-            // var element = new Physijs.BoxMesh(child.geometry,child.material);
-            // oThis.scene.add(element);
+            // object.traverse(function(child){      //Traverse gets through all meshes applying the callbacl
+            //     if(child instanceof THREE.Mesh){
+            //         child.material = material;
+            //         chloaderild.receiveShadow = true;
+            //         child.castShadow = true;
+            //         head = child;
+                    
+            //         console.log(child);                    
+            //         var v = new THREE.Vector3();
+            //         v.copy(child.position);
+            //         child.localToWorld(v);
+            //         child.parent.worldToLocal(v);
+            //         console.log(v);
+
+            //         if(i < box && child.name != "hide"){
+            //             i++;
+            //             var element = new Physijs.BoxMesh(child.geometry,new THREE.MeshBasicMaterial(),0);
+            //             element.position = 
+            //             scene.add(element);
+            //         }
+                    
+            //     }
+            // });
+            console.log(object);
+            object = object.children[0];
+            var tamanio = 3;
+            var geometry = object.geometry;
+            var loader = new THREE.TextureLoader();
+            var colorTexture = loader.load( "assets/images/DefaultMaterial_Base_Color.png" );
+
+            var normalTexture = loader.load("assets/images/DefaultMaterial_Normal.png")
+            var bumpTexture = loader.load("assets/images/DefaultMaterial_Height.png")
+
+            var material = new THREE.MeshPhongMaterial({
+                color: 0x4286f4,
+                map:colorTexture,
+                normalMap:normalTexture,
+                bumpMap:bumpTexture,
+            });
+            var towerList = [];
+            function random(min,max) // min and max included
+            {
+                
+                var a = Math.floor(Math.random()*(max-min+1)+min);
+                if(Math.random()>0.5){
+                    a*=-1
+                }
+                return a;
+            }
+
+            var towers = 40;
+            for(var i = 0; i < towers; i++){
+                var element = new Physijs.BoxMesh(geometry,material,0);
+                element.position.set(random(20,150),0,random(20,150));
+                element.rotation.set(0,random(0,360),0)
+                //element.position.set(10,0,10);
+                scene.add(element);
+            }
             
         });
 
