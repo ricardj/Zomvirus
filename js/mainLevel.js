@@ -4,11 +4,14 @@ var playerPosition = new THREE.Vector3(); //Used by the enemies to followw the p
 var renderer;         //Used by the camera fps and the main level
 var canShoot = 20;
 var shooting = true;
+var scene;
+var id = 1;
 
 
 
 function FirstPersonCamera(){
     var oThis = this;
+    var collider;
     this.camera = new THREE.PerspectiveCamera(
         60,
         window.innerWidth/ window.innerHeight,
@@ -30,6 +33,18 @@ function FirstPersonCamera(){
     this.controls;
 
     this.controls = new THREE.PointerLockControls(this.camera);
+
+
+    this.geometry = new THREE.BoxGeometry( 10, 10, 10 );
+    this.material = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
+    this.collider = new Physijs.BoxMesh( this.geometry, this.material, 1000 );
+    this.collider.position.set(this.camera.position.x, 30, this.camera.position.z);
+
+
+    /*this.get("mesh").object.addEventListener("ready", function(){
+        this.get("mesh").object.setAngularFactor(new THREE.Vector3(0, 0, 0));
+    });*/
+
 
     renderer.domElement.addEventListener( 'click', function () {
         oThis.controls.lock();
@@ -54,8 +69,8 @@ function FirstPersonCamera(){
                 oThis.moveRight = true;
                 break;
             case 32: // space
-                if ( oThis.canJump === true ) oThis.velocity.y += 350;
-                oThis.canJump = false;
+                if ( oThis.canJump === true ) /*oThis.velocity.y += 350;
+                oThis.canJump = false;*/
                 break;
         }
     };
@@ -86,35 +101,70 @@ function FirstPersonCamera(){
     document.addEventListener( 'keyup', this.onKeyUp, false );
 
     this.update = function (){
+        if(oThis.moveForward){
+            oThis.collider.rotateY(0.2 * Math.PI/180);
+            oThis.collider.__dirtyRotation = true;
+            
+            var matrix = new THREE.Matrix4();
+            matrix.extractRotation( oThis.collider.matrix );
+            var direction = new THREE.Vector3( 1, 0, 0 );
+            direction.applyMatrix4( matrix );
+
+            
+            var newPosition = new THREE.Vector3(oThis.collider.position.x,oThis.collider.position.y,oThis.collider.position.z);
+            var playerPositionCopy = new THREE.Vector3(90,0,80);
+            playerPositionCopy.copy(playerPosition);
+            direction = playerPositionCopy.sub(newPosition);
+            direction.normalize();
+            direction.y = 0;
+            direction.multiplyScalar(0.10);
+            newPosition.add(playerPositionCopy);
+            oThis.collider.position.set(newPosition.x,newPosition.y,newPosition.z);
+            oThis.collider.__dirtyPosition = true;
+        }
+
+
         var time = performance.now();
         var delta = ( time - this.prevTime ) / 1000;
         this.velocity.x -= this.velocity.x * 10.0 * delta;
         this.velocity.z -= this.velocity.z * 10.0 * delta;
-        this.velocity.y -= 9.8 * 100.0 * delta; // 100.0 = mass
+        //this.velocity.y -= 9.8 * 100.0 * delta; // 100.0 = mass
         this.direction.z = Number( this.moveForward ) - Number( this.moveBackward );
         this.direction.x = Number( this.moveLeft ) - Number( this.moveRight );
         //direction.normalize(); // this ensures consistent movements in all directions
 
-        if ( this.moveForward || this.moveBackward ) this.velocity.z -= this.direction.z * 400.0 * delta;
-        if ( this.moveLeft || this.moveRight ) this.velocity.x -= this.direction.x * 400.0 * delta;
+        if ( this.moveForward || this.moveBackward ) collider;//this.velocity.z -= this.direction.z * 400.0 * delta;
+        if ( this.moveLeft || this.moveRight ) ;//this.velocity.x -= this.direction.x * 400.0 * delta;
 
         var onObject = false;
         if ( onObject === true ) {
             this.velocity.y = Math.max( 0, this.velocity.y );
             this.canJump = true;
         }
-        this.controls.getObject().translateX( this.velocity.x * delta );
+        if(oThis.canJump == true){
+            collider.applyCentralImpulse(new THREE.Vector3(0,100000000,0))
+        }
+        /*this.controls.getObject().translateX( this.velocity.x * delta );
         this.controls.getObject().position.y += ( this.velocity.y * delta ); // new behavior
-        this.controls.getObject().translateZ( this.velocity.z * delta );
-        if ( this.controls.getObject().position.y < 10 ) {
+        this.controls.getObject().translateZ( this.velocity.z * delta );*/
+
+
+
+        /*playerPosition = new THREE.Vector3(this.collider.position.x,this.collider.position.y,this.collider.position.z);
+        this.controls.getObject().position = playerPosition;*/
+
+
+        /*if ( this.controls.getObject().position.y < 10 ) {
             this.velocity.y = 0;
             this.controls.getObject().position.y = 10;
             this.canJump = true;
-        }
+        }*/
         this.prevTime = time;
     }
 
 }
+
+
 
 function Character (){
     this.geometry = new THREE.BoxGeometry( 10, 10, 10 );
@@ -136,10 +186,12 @@ function Character (){
     this.update = function(){
         playerPosition.setFromMatrixPosition( this.mesh.matrixWorld );
     }
+
+    
 }
 
-function Enemy() {
-
+function Enemy(id) {
+    var oThis = this;
     this.geometry = new THREE.ConeGeometry( 10,15, 32 );
     var texture = new THREE.TextureLoader().load( "assets/images/zombie_1.jpg" );
     texture.wrapS = THREE.RepeatWrapping;
@@ -151,8 +203,27 @@ function Enemy() {
 
     this.mesh = new Physijs.ConvexMesh(this.geometry, this.material, 3000);
     this.mesh.name = "enemy";
-    
+    this.mesh.lives = 3;
+    this.mesh.id = id;
     this.mesh.position.set(20,0,10);
+
+    this.handleCollision = function( other_object, relative_velocity, relative_rotation, contact_normal ) {
+        // `this` has collided with `other_object` with an impact speed of `relative_velocity` and a rotational force of `relative_rotation` and at normal `contact_normal`
+        //console.log("The mesh is colliding");
+        if(other_object.name ==  "bullet"){
+            //console.log("Dammit! the enemy killed me");
+            oThis.mesh.lives -=1;
+            console.log(oThis.mesh.lives);
+            if(oThis.mesh.lives <= 0){
+                scene.remove(oThis.mesh);
+            }
+        }
+    }
+
+    this.mesh.addEventListener( 'collision', this.handleCollision );
+
+
+
     
     this.update = function(){
         
@@ -205,50 +276,53 @@ function BulletManager(level){
     this.mainLevel = level;
 
     this.addBullet = function (){
-        let bullet = new THREE.Mesh(
+        /*let bullet = new THREE.Mesh(
             new THREE.SphereGeometry(20,20,20),
             new THREE.MeshBasicMaterial({color:0xffffff})
-        );
-        let c = oThis.mainLevel.camera;
-        console.log(c.position.x);
+            
+        );*/
+       
+        /** ***************************************************/
 
+        var ballMaterial = new THREE.MeshPhongMaterial( { color: 0x202020 } );
+
+        var ballMass = 35;
+        var ballRadius = 0.4; 
+        var bullet = new Physijs.SphereMesh( 
+            new THREE.SphereGeometry( ballRadius, 10, 10 ), 
+            ballMaterial,
+            ballMass
+        );
+        bullet.name= "bullet";
+        /*bullet.addEventListener('collision', function(object){
+            console.log("hello world"); // NOT FIRING
+        });*/
+
+        let c = oThis.mainLevel.camera;
         bullet.position.set(
-            /*meshes["playerweapon"].position.x,
-            meshes["playerweapon"].position.y + 0.15,
-            meshes["playerweapon"].position.z*/
+
             c.position.x,
             c.position.y,
             c.position.z
         );
         let dir = new THREE.Vector3(); ;
         c.getWorldDirection(dir);
-        /*console.log(dir.x);
-        console.log(dir.y);
-        console.log(dir.x);*/
 
-        // set the velocity of the bullet
-        bullet.velocity = new THREE.Vector3(
-            dir.x*5,
-            dir.y*5,
-            dir.z*5
-            /*-Math.sin(c.rotation.y),
-            0,
-            Math.cos(c.rotation.y)*/
+        
+        bullet.castShadow = true;
+        bullet.receiveShadow = true;
+
+        bullet.position.set(
+
+            c.position.x,
+            c.position.y,
+            c.position.z
         );
-        
-        // after 1000ms, set alive to false and remove from scene
-        // setting alive to false flags our update code to remove
-        // the bullet from the bullets array
-        bullet.alive = true;
-        setTimeout(function(){
-            bullet.alive = false;
-            oThis.mainLevel.scene.remove(bullet);
-        }, 1000);
-        
-        // add to scene, array, and set the delay to 10 frames
-        this.bullets.push(bullet);
-        this.mainLevel.scene.add(bullet);
-        shooting = false;
+
+        this.bullets.push(bullet);                
+        scene.add(bullet);
+        bullet.setLinearVelocity( new THREE.Vector3( dir.x * 80, dir.y * 80 , dir.z *80 ) ); 
+
     }
 
     function shoot(){
@@ -269,11 +343,11 @@ function BulletManager(level){
                 continue;
             }
             
-            this.bullets[index].position.add(this.bullets[index].velocity);
+            //this.bullets[index].position.add(this.bullets[index].velocity);
         }
 
         if(shooting){
-            console.log("ddd");
+            //console.log("ddd");
             this.addBullet();
             shooting = false;
         }
@@ -288,9 +362,9 @@ function MainLevel(foreignRenderer){
     this.renderer = foreignRenderer;
     this.bullets = [];    
 
-    this.scene = new Physijs.Scene();
-    this.scene.fog = new THREE.Fog( 0x000000, 0, 200 );
-    this.scene.updateMatrixWorld(true);
+    scene = new Physijs.Scene();
+    scene.fog = new THREE.Fog( 0x000000, 0, 200 );
+    scene.updateMatrixWorld(true);
     
     this.updatable_assets = [];
 
@@ -305,16 +379,15 @@ function MainLevel(foreignRenderer){
     createPlatform();
     createEnemies();
     createBulletManager();
-    
     this.render = function() {
         
         var e;
         for (e in this.updatable_assets){
             this.updatable_assets[e].update();
         }
-        this.scene.updateMatrixWorld(true);
-        this.scene.simulate();
-        this.renderer.render(this.scene,this.camera);
+        scene.updateMatrixWorld(true);
+        scene.simulate();
+        this.renderer.render(scene,this.camera);
     }
 
     function createBulletManager(){
@@ -361,6 +434,7 @@ function MainLevel(foreignRenderer){
         //fps camera
         var fps_camera =new FirstPersonCamera(); 
         oThis.camera = fps_camera.camera;
+        scene.add(fps_camera.collider);
         //oThis.fps = fps.camera;
         oThis.updatable_assets.push(fps_camera);
     }
@@ -385,7 +459,7 @@ function MainLevel(foreignRenderer){
       
         platform.rotation.x = Math.PI / 2;
       
-        oThis.scene.add(platform);
+        scene.add(platform);
     }
       
       
@@ -407,11 +481,11 @@ function MainLevel(foreignRenderer){
 
 
         for(var i = 0; i < 4; i++){
-            oThis.scene.add(lights[i]);
+            scene.add(lights[i]);
         }
       
         var ambientLight = new THREE.AmbientLight(0x000000);
-        oThis.scene.add(ambientLight);
+        scene.add(ambientLight);
     }
       
     function createEnvironment(){
@@ -425,16 +499,18 @@ function MainLevel(foreignRenderer){
         oThis.character = new Character();
         //oThis.character.mesh.add(oThis.environment.mesh);
         oThis.updatable_assets.push(oThis.character);
-        oThis.scene.add(oThis.character.mesh);
+        scene.add(oThis.character.mesh);
     }
+
     
     function createEnemies(){
         for (var i = 0; i < 5; i ++){
             var p = Math.floor(Math.random() * 100);
-            var enemy = new Enemy();
+            var enemy = new Enemy(id);
             enemy.mesh.position.set(p,0,p);
             oThis.updatable_assets.push(enemy);
-            oThis.scene.add(enemy.mesh);
+            scene.add(enemy.mesh);
+            id += 1;
         }
     }
 }
