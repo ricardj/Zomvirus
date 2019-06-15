@@ -4,8 +4,57 @@ var playerPosition = new THREE.Vector3(); //Used by the enemies to followw the p
 var renderer;         //Used by the camera fps and the main level
 var scene;
 var id = 1;
+var mixer = null;
+var action;
+
+function Weapon(){
+    var oThis = this;
+    this.clock = new THREE.Clock();
+    this.loader = new THREE.FBXLoader();
+    this.mesh = null;
 
 
+    this.loader.load( 'assets/models/armsrifle1.fbx', function ( object ) {
+        oThis.mesh = object;
+
+        mixer = new THREE.AnimationMixer( this.mesh );
+
+        action = mixer.clipAction( oThis.mesh.animations[ 0 ] );
+        action.play();
+        oThis.object.scale.set(0.1,0.1,0.1);
+
+        oThis.mesh.traverse( function ( child ) {
+
+            if ( child.isMesh ) {
+
+                child.castShadow = true;
+                child.receiveShadow = true;
+
+            }
+
+        } );
+        oThis.mesh.position.x = pos.x;
+        oThis.mesh.updateMatrix();
+
+        scene.add( oThis.mesh );
+
+    } );
+
+    this.update = function(pos){
+        var delta = oThis.clock.getDelta();
+
+        //if(oThis.object){
+            this.mesh.position.x = pos.x;
+            this.mesh.updateMatrix();
+
+        //}
+        if(mixer){
+            //oThis.object.position.set(pos.x, pos.y, pos.z);
+            mixer.update( delta );
+            //mixer.stop();
+        }
+    }
+}
 
 function FirstPersonCamera(){
 
@@ -39,6 +88,8 @@ function FirstPersonCamera(){
     this.material = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
     this.collider = new Physijs.BoxMesh( this.geometry, this.material, 1000 );
     this.collider.position.set(this.camera.position.x, 30, this.camera.position.z);
+
+    this.weapon = new Weapon();
 
 
     /*this.get("mesh").object.addEventListener("ready", function(){
@@ -168,6 +219,7 @@ function FirstPersonCamera(){
         oThis.canJump = false;
         this.prevTime = time;
         oThis.ttj -= 1;
+        oThis.weapon.update(oPos);
     }
 
 }
