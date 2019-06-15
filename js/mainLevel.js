@@ -3,6 +3,7 @@
 var playerPosition = new THREE.Vector3(); //Used by the enemies to followw the player
 var renderer;         //Used by the camera fps and the main level
 var scene;
+var stop = false;
 var id = 1;
 var mixer = null;
 var action;
@@ -47,7 +48,8 @@ function random(min,max) // min and max included
 
 
 function gameOverFunction(){
-    scene = null;
+    //scene = null;
+    stop = true;
     document.getElementById('title').style = "font-family: 'Iceland', cursive;color:white;font-size: 200px;grid-column: 2;grid-row: 2;text-align: center;";
     document.getElementById('title').innerHTML = "GAME OVER"
     document.getElementById('menu').style = "display:block";
@@ -232,7 +234,9 @@ function FirstPersonCamera(){
         oThis.camera.getWorldDirection(dir);
         dir.normalize();
 
-        oThis.weapon.mesh.lookAt(oPos.x + dir.x*30, oPos.y + dir.y*30, oPos.z + dir.z*30);
+        if(oThis.weapon.mesh != undefined){
+            oThis.weapon.mesh.lookAt(oPos.x + dir.x*30, oPos.y + dir.y*30, oPos.z + dir.z*30);
+        }
 
         dir.y = 0;
         dir.normalize();
@@ -287,9 +291,11 @@ function FirstPersonCamera(){
         oThis.ttj -= 1;
 
         playerPosition = this.camera.position;
-        oThis.weapon.update();
-        oThis.weapon.mesh.position.set(oPos.x + dir.x * 2, oPos.y-0.5 + dir.y*2, oPos.z + dir.z *2);
-
+        
+        if(oThis.weapon.mesh != undefined){
+            oThis.weapon.update();
+            oThis.weapon.mesh.position.set(oPos.x + dir.x * 2, oPos.y-0.5 + dir.y*2, oPos.z + dir.z *2);
+        }
     }
 
 }
@@ -535,14 +541,17 @@ function MainLevel(foreignRenderer){
         var enemyGenerator = setInterval(function(){
             createEnemies();
         },15000);
+        stop = false;
     }
 
     this.render = function() {
         
-        if(scene != null){
+        if(!stop){
             var e;
             for (e in this.updatable_assets){
-                this.updatable_assets[e].update();
+                if(this.updatable_assets[e] != undefined){
+                    this.updatable_assets[e].update();
+                }
             }
             scene.updateMatrixWorld(true);
             scene.simulate();
