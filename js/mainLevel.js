@@ -6,6 +6,7 @@ var scene;
 var id = 1;
 var mixer = null;
 var action;
+var reload = false;;
 
 //Timer
 var timer;
@@ -60,7 +61,7 @@ function Weapon(){
     this.clock = new THREE.Clock();
     this.loader = new THREE.FBXLoader();
     this.object = null;
-
+    this.mesh;
 
     this.loader.load( 'assets/models/armsrifle1.fbx', function ( object ) {
          object;
@@ -68,8 +69,11 @@ function Weapon(){
         mixer = new THREE.AnimationMixer(object );
 
         action = mixer.clipAction( object.animations[ 0 ] );
+        action.setLoop( THREE.LoopOnce );
+        action.clampWhenFinished = true;
+        action.enable = true;
         action.play();
-        //oThis.object.scale.set(0.1,0.1,0.1);
+        object.scale.set(0.1,0.1,0.1);
 
         object.traverse( function ( child ) {
 
@@ -83,19 +87,25 @@ function Weapon(){
         } );
         //oThis.mesh.position.x = pos.x;
         //oThis.mesh.updateMatrix();
-
-        scene.add(object );
+        oThis.mesh = object;
+        scene.add(oThis.mesh);
 
     } );
 
     this.update = function(){
         var delta = oThis.clock.getDelta();
+        
 
-        //if(oThis.object){
-            /*this.object.position.x = pos.x;
-            this.object.updateMatrix();*/
+        if(reload == true){
+            mixer = new THREE.AnimationMixer(oThis.mesh );
 
-        //}
+            action = mixer.clipAction( oThis.mesh.animations[ 0 ] );
+            action.setLoop( THREE.LoopOnce );
+            action.clampWhenFinished = true;
+            action.enable = true;
+            action.play();        
+            reload = false;
+        }
         if(mixer){
             //oThis.object.position.set(pos.x, pos.y, pos.z);
             mixer.update( delta );
@@ -217,7 +227,13 @@ function FirstPersonCamera(){
 
     this.update = function (){
         var dir = new THREE.Vector3();
+        var oPos = oThis.collider.position;
+
         oThis.camera.getWorldDirection(dir);
+        dir.normalize();
+
+        oThis.weapon.mesh.lookAt(oPos.x + dir.x*30, oPos.y + dir.y*30, oPos.z + dir.z*30);
+
         dir.y = 0;
         dir.normalize();
         var newPosition = new THREE.Vector3(oThis.collider.position.x,oThis.collider.position.y,oThis.collider.position.z);
@@ -252,9 +268,8 @@ function FirstPersonCamera(){
             oThis.ttj = 200;
         }
 
-        var oPos = oThis.collider.position;
 
-        oThis.camera.position.set(oPos.x, oPos.y + 5, oPos.z);
+        oThis.camera.position.set(oPos.x, oPos.y + 2, oPos.z);
         
         
         oThis.collider.__dirtyPosition = true;
@@ -273,6 +288,8 @@ function FirstPersonCamera(){
 
         playerPosition = this.camera.position;
         oThis.weapon.update();
+        oThis.weapon.mesh.position.set(oPos.x + dir.x * 2, oPos.y-0.5 + dir.y*2, oPos.z + dir.z *2);
+
     }
 
 }
@@ -316,7 +333,6 @@ function Enemy(id) {
         if(other_object.name ==  "bullet"){
             //console.log("Dammit! the enemy killed me");
             oThis.mesh.lives -=1;
-            console.log(oThis.mesh.lives);
             if(oThis.mesh.lives <= 0){
                 scene.remove(oThis.mesh);
                 enemyDeath.play();
@@ -404,14 +420,16 @@ function BulletManager(level){
         });*/
 
         let c = oThis.mainLevel.camera;
-        bullet.position.set(
-
-            c.position.x,
-            c.position.y,
-            c.position.z
-        );
+        console.log(c.position.y);
         let dir = new THREE.Vector3(); ;
         c.getWorldDirection(dir);
+
+        bullet.position.set(
+
+            c.position.x + dir.x *4,
+            c.position.y + dir.y *4,
+            c.position.z + dir.z *4
+        );
 
         
         bullet.castShadow = true;
@@ -437,7 +455,7 @@ function BulletManager(level){
         oThis.shooting = false;
         oThis.canShoot = 15;
         //oThis.burstShoot = 1;
-
+        reload = true;
 
     }
 
