@@ -16,15 +16,17 @@ var select2 = new Audio();
 select2.src = "assets/sounds/select2.mp3";
 
 var currentLevel = 0;
+var renderMainLevel = true;
 function render(){
 
 	if (currentLevel == 0){
 		introLevel.render();
 	}
 	if(currentLevel == 1){
-		if(mainLevel != null){
+		if(renderMainLevel){
 			mainLevel.render();
 		}
+		
 	}
 	
 	requestAnimationFrame(render)
@@ -63,10 +65,10 @@ document.getElementById('new_game').onclick = function() {
 	select2.play();
 
 	//We change the level.
-	
-	if(currentLevel == 1){
-		mainLevel=null;
-		mainLevel = new MainLevel(renderer)
+
+	if(document.getElementById("new_game").innerHTML == "Reload"){
+		mainLevel = null;
+		mainLevel = new MainLevel(renderer);
 	}else{
 		currentLevel = 1;
 	}
