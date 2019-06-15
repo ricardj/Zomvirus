@@ -32,19 +32,19 @@ function Weapon(){
     var oThis = this;
     this.clock = new THREE.Clock();
     this.loader = new THREE.FBXLoader();
-    this.mesh = null;
+    this.object = null;
 
 
     this.loader.load( 'assets/models/armsrifle1.fbx', function ( object ) {
-        oThis.mesh = object;
+         object;
 
-        mixer = new THREE.AnimationMixer( this.mesh );
+        mixer = new THREE.AnimationMixer(object );
 
-        action = mixer.clipAction( oThis.mesh.animations[ 0 ] );
+        action = mixer.clipAction( object.animations[ 0 ] );
         action.play();
-        oThis.object.scale.set(0.1,0.1,0.1);
+        //oThis.object.scale.set(0.1,0.1,0.1);
 
-        oThis.mesh.traverse( function ( child ) {
+        object.traverse( function ( child ) {
 
             if ( child.isMesh ) {
 
@@ -57,16 +57,16 @@ function Weapon(){
         //oThis.mesh.position.x = pos.x;
         //oThis.mesh.updateMatrix();
 
-        scene.add( oThis.mesh );
+        scene.add(object );
 
     } );
 
-    this.update = function(pos){
+    this.update = function(){
         var delta = oThis.clock.getDelta();
 
         //if(oThis.object){
-            this.mesh.position.x = pos.x;
-            this.mesh.updateMatrix();
+            /*this.object.position.x = pos.x;
+            this.object.updateMatrix();*/
 
         //}
         if(mixer){
@@ -240,7 +240,7 @@ function FirstPersonCamera(){
         oThis.ttj -= 1;
 
         playerPosition = this.camera.position;
-        oThis.weapon.update(oPos);
+        oThis.weapon.update();
     }
 
 }
