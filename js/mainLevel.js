@@ -15,12 +15,12 @@ var timer;
 var enemyDeath = new Audio();
 var enemyNear = new Audio();
 var gameOver = new Audio();
-var shot = new Audio();
+//var shot = new Audio();
 
 enemyDeath.src = "assets/sounds/enemyDeath.mp3";
 enemyNear.src ="assets/sounds/enemyNear.mp3";
 gameOver.src = "assets/sounds/gameOver.mp3";
-shot.src = "assets/sounds/shot.mp3";
+//shot.src = "assets/sounds/shot.mp3";
 
 
 function inArray(vector,vectorArray)
@@ -466,6 +466,8 @@ function BulletManager(level){
     this.update = function(){
         if(oThis.shooting && oThis.burstShoot <= 3 && oThis.canShoot <= 0){
             this.addBullet();
+            let shot = new Audio();
+            shot.src = "assets/sounds/shot.mp3";
             shot.play();
             oThis.burstShoot += 1;
             oThis.canShoot = 15;
