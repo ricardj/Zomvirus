@@ -1,7 +1,7 @@
 body {
     background-color: black;
     margin: 0px;
-    
+    overflow: hidden;
 }
 
 div#interface {
@@ -12,9 +12,10 @@ div#interface {
 
 .grid-container {
     display: grid;
-    grid-template-columns: 25% auto 25%;
+    grid-template-columns: 100px auto 100px;
     grid-template-rows: 15% auto;
     justify-content: center;
+    width :100%;
 }
 
 #title {
@@ -22,6 +23,7 @@ div#interface {
     font-size: 200px;
     grid-column: 2;
     grid-row: 2;
+    text-align: center;
 }
 
 #menu {

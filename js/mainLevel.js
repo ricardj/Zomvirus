@@ -7,6 +7,21 @@ var id = 1;
 var mixer = null;
 var action;
 
+//Timer
+var timer;
+
+//Some sounds
+var enemyDeath = new Audio();
+var enemyNear = new Audio();
+var gameOver = new Audio();
+var shot = new Audio();
+
+enemyDeath.src = "assets/sounds/enemyDeath.mp3";
+enemyNear.src ="assets/sounds/enemyNear.mp3";
+gameOver.src = "assets/sounds/gameOver.mp3";
+shot.src = "assets/sounds/shot.mp3";
+
+
 function inArray(vector,vectorArray)
 {
     var count=vectorArray.length;
@@ -28,6 +43,18 @@ function random(min,max) // min and max included
                     }
                     return a;
                 }
+
+
+function gameOverFunction(){
+    scene = null;
+    document.getElementById('title').style = "font-family: 'Iceland', cursive;color:white;font-size: 200px;grid-column: 2;grid-row: 2;text-align: center;";
+    document.getElementById('title').innerHTML = "GAME OVER"
+    document.getElementById('menu').style = "display:block";
+    document.getElementById('new_game').innerHTML = "Reload";
+    clearInterval(timer);
+    gameOver.play();
+}
+
 function Weapon(){
     var oThis = this;
     this.clock = new THREE.Clock();
@@ -106,7 +133,9 @@ function FirstPersonCamera(){
 
 
     this.geometry = new THREE.BoxGeometry( 10, 10, 10 );
-    this.material = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
+    this.material = new THREE.MeshBasicMaterial( {color: 0x00ff00,
+    transparent: true, opacity: 0} );
+
     this.collider = new Physijs.BoxMesh( this.geometry, this.material, 1000 );
     this.collider.position.set(this.camera.position.x, 30, this.camera.position.z);
 
@@ -128,6 +157,9 @@ function FirstPersonCamera(){
         //console.log("The mesh is colliding");
         if(other_object.name ==  "enemy"){
             //alert("I will find you");
+            //The player is dead.
+            gameOverFunction();
+
         }
     }
 
@@ -245,35 +277,9 @@ function FirstPersonCamera(){
 
 }
 
-
-
-function Character (){
-    this.geometry = new THREE.BoxGeometry( 10, 10, 10 );
-    this.material = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
-    this.mesh = new Physijs.BoxMesh( this.geometry, this.material, 1000 );
-    this.mesh.position.set(0, 30, 0);
-    
-    this.handleCollision = function( other_object, relative_velocity, relative_rotation, contact_normal ) {
-        // `this` has collided with `other_object` with an impact speed of `relative_velocity` and a rotational force of `relative_rotation` and at normal `contact_normal`
-        //console.log("The mesh is colliding");
-        if(other_object.name ==  "enemy"){
-            //console.log("Dammit! the enemy killed me");
-        }
-    }
-
-    this.mesh.addEventListener( 'collision', this.handleCollision );
-
-    this.lookAtVector = new THREE.Vector3(0,0,0);
-    this.update = function(){
-        //playerPosition.setFromMatrixPosition( this.mesh.matrixWorld );
-    }
-
-    
-}
-
 function Enemy(id) {
     var oThis = this;
-    this.speed = 0.4;
+    this.speed = 0.5;
     
     loader = new THREE.OBJLoader();
     this.mesh = new THREE.Mesh();
@@ -299,7 +305,7 @@ function Enemy(id) {
         oThis.mesh.name = "enemy";
         oThis.mesh.lives = 3;
         oThis.mesh.id = id;
-        oThis.mesh.position.set(random(20,800),10,random(20,800));
+        oThis.mesh.position.set(random(20,500),10,random(20,500));
         scene.add(oThis.mesh);
         oThis.mesh.addEventListener( 'collision', oThis.handleCollision );
     });
@@ -313,6 +319,7 @@ function Enemy(id) {
             console.log(oThis.mesh.lives);
             if(oThis.mesh.lives <= 0){
                 scene.remove(oThis.mesh);
+                enemyDeath.play();
             }
         }
     }
@@ -421,6 +428,7 @@ function BulletManager(level){
     this.shoot = function(){
 
         if(oThis.shooting == false){
+            
             oThis.burstShoot = 1;
             oThis.shooting = true;
         }
@@ -440,6 +448,7 @@ function BulletManager(level){
     this.update = function(){
         if(oThis.shooting && oThis.burstShoot <= 3 && oThis.canShoot <= 0){
             this.addBullet();
+            shot.play();
             oThis.burstShoot += 1;
             oThis.canShoot = 15;
             
@@ -469,15 +478,16 @@ function MainLevel(foreignRenderer){
     createLight();
     createEnvironment();
     createCamera();
-    createCharacter();
     createPlatform();
     createFloor();
     createBulletManager();
 
     this.startLevel = function() {
 
+        createEnemies();
+
         var startTime = new Date().getTime();
-        var timer = setInterval(function() {
+        timer = setInterval(function() {
 
             var t = new Date().getTime() - startTime;
         
@@ -501,17 +511,23 @@ function MainLevel(foreignRenderer){
 
 
         }, 1000);
+
+        var enemyGenerator = setInterval(function(){
+            createEnemies();
+        },15000);
     }
 
     this.render = function() {
         
-        var e;
-        for (e in this.updatable_assets){
-            this.updatable_assets[e].update();
+        if(scene != null){
+            var e;
+            for (e in this.updatable_assets){
+                this.updatable_assets[e].update();
+            }
+            scene.updateMatrixWorld(true);
+            scene.simulate();
+            this.renderer.render(scene,this.camera);
         }
-        scene.updateMatrixWorld(true);
-        scene.simulate();
-        this.renderer.render(scene,this.camera);
     }
 
     function createBulletManager(){
@@ -621,17 +637,10 @@ function MainLevel(foreignRenderer){
         oThis.updatable_assets.push(oThis.environment);
         
     }
-      
-    function createCharacter(){
-        oThis.character = new Character();
-        //oThis.character.mesh.add(oThis.environment.mesh);
-        oThis.updatable_assets.push(oThis.character);
-        scene.add(oThis.character.mesh);
-    }
-
+    
     
     function createEnemies(){
-        for (var i = 0; i < 50; i ++){
+        for (var i = 0; i < 20; i ++){
             
             var enemy = new Enemy(id);
             oThis.updatable_assets.push(enemy);
@@ -710,7 +719,4 @@ function MainLevel(foreignRenderer){
         });
 
     }
-
-    createEnemies();
-    this.startLevel();
 }
