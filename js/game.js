@@ -8,7 +8,7 @@ var renderer;
 var introLevel;
 var mainLevel;
 
-var currentLevel = 1;
+var currentLevel = 0;
 function render(){
 
 	if (currentLevel == 0){
@@ -42,7 +42,9 @@ function init() {
 
 document.getElementById('new_game').onclick = function() {
 	//We set all the interface to invisible
-	document.getElementById('interface').style = "display:none";
+	document.getElementById('title').style = "display:none";
+	document.getElementById('menu').style = "display:none";
+	
 
 	//We change the level.
 	currentLevel = 1;

@@ -5,6 +5,27 @@ var renderer;         //Used by the camera fps and the main level
 var scene;
 var id = 1;
 
+function inArray(vector,vectorArray)
+{
+    var count=vectorArray.length;
+    for(var i=0;i<count;i++)
+    {
+        if(vectorArray[i].x===vector.x
+            && vectorArray[i].y===vector.y
+            && vectorArray[i].z===vector.z){return true;}
+    }
+    return false;
+}
+
+function random(min,max) // min and max included
+                {
+                    
+                    var a = Math.floor(Math.random()*(max-min+1)+min);
+                    if(Math.random()>0.5){
+                        a*=-1
+                    }
+                    return a;
+                }
 
 
 function FirstPersonCamera(){
@@ -55,7 +76,7 @@ function FirstPersonCamera(){
         // `this` has collided with `other_object` with an impact speed of `relative_velocity` and a rotational force of `relative_rotation` and at normal `contact_normal`
         //console.log("The mesh is colliding");
         if(other_object.name ==  "enemy"){
-            alert("I will find you");
+            //alert("I will find you");
         }
     }
 
@@ -107,8 +128,6 @@ function FirstPersonCamera(){
                 break;
         }
     };
-
-    
 
     document.addEventListener( 'keydown', this.onKeyDown, false );
     document.addEventListener( 'keyup', this.onKeyUp, false );
@@ -168,6 +187,8 @@ function FirstPersonCamera(){
         oThis.canJump = false;
         this.prevTime = time;
         oThis.ttj -= 1;
+
+        playerPosition = this.camera.position;
     }
 
 }
@@ -192,7 +213,7 @@ function Character (){
 
     this.lookAtVector = new THREE.Vector3(0,0,0);
     this.update = function(){
-        playerPosition.setFromMatrixPosition( this.mesh.matrixWorld );
+        //playerPosition.setFromMatrixPosition( this.mesh.matrixWorld );
     }
 
     
@@ -200,13 +221,14 @@ function Character (){
 
 function Enemy(id) {
     var oThis = this;
+    this.speed = 0.4;
     
     loader = new THREE.OBJLoader();
     this.mesh = new THREE.Mesh();
 
     loader.load('assets/models/enemy1.obj', function(object){
 
-        console.log(object);
+        //console.log(object);
         object = object.children[0];
         var tamanio = 3;
         var geometry = object.geometry;
@@ -225,7 +247,7 @@ function Enemy(id) {
         oThis.mesh.name = "enemy";
         oThis.mesh.lives = 3;
         oThis.mesh.id = id;
-        oThis.mesh.position.set(20,0.1,10);
+        oThis.mesh.position.set(random(20,800),10,random(20,800));
         scene.add(oThis.mesh);
         oThis.mesh.addEventListener( 'collision', oThis.handleCollision );
     });
@@ -242,10 +264,6 @@ function Enemy(id) {
             }
         }
     }
-
-    
-
-
 
     
     this.update = function(){
@@ -265,7 +283,7 @@ function Enemy(id) {
         direction = playerPositionCopy.sub(newPosition);
         direction.normalize();
         direction.y = 0;
-        direction.multiplyScalar(0.10);
+        direction.multiplyScalar(oThis.speed);
         newPosition.add(direction);
         this.mesh.position.set(newPosition.x,newPosition.y,newPosition.z);
         this.mesh.__dirtyPosition = true;
@@ -281,9 +299,9 @@ function Environment(){
     this.material = new THREE.MeshBasicMaterial();
     this.material.map = THREE.ImageUtils.loadTexture('assets/images/skybox_1.jpg');
   
-    this.material.side = THREE.BackSide;
-    this.material.depthTest = false;
-    this.material.depthWrite = false;
+    // this.material.side = THREE.BackSide;
+    // this.material.depthTest = false;
+    // this.material.depthWrite = false;
   
     this.mesh = new THREE.Mesh(this.geometry,this.material);
 
@@ -343,7 +361,8 @@ function BulletManager(level){
 
         this.bullets.push(bullet);                
         scene.add(bullet);
-        bullet.setLinearVelocity( new THREE.Vector3( dir.x * 100, dir.y * 100 , dir.z *100 ) ); 
+        var speed = 1000;
+        bullet.setLinearVelocity( new THREE.Vector3( dir.x * speed, dir.y * speed , dir.z *speed ) ); 
 
     }
 
@@ -386,7 +405,7 @@ function MainLevel(foreignRenderer){
 
     scene = new Physijs.Scene();
     scene.setGravity(new THREE.Vector3( 0, -20, 0 ))
-    scene.fog = new THREE.Fog( 0x000000, 0, 200 );
+    //scene.fog = new THREE.Fog( 0x000000, 0, 250 );
     scene.updateMatrixWorld(true);
     
     this.updatable_assets = [];
@@ -396,13 +415,42 @@ function MainLevel(foreignRenderer){
     oThis.mouseY = 0;
     
     createLight();
-    createCamera();
     createEnvironment();
+    createCamera();
     createCharacter();
     createPlatform();
     createFloor();
-    createEnemies();
     createBulletManager();
+
+    this.startLevel = function() {
+
+        var startTime = new Date().getTime();
+        var timer = setInterval(function() {
+
+            var t = new Date().getTime() - startTime;
+        
+
+            if (t >= 0) {
+
+                let days = Math.floor(t / (1000 * 60 * 60 * 24));
+                let hours = Math.floor((t % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                let mins = Math.floor((t % (1000 * 60 * 60)) / (1000 * 60));
+                let secs = Math.floor((t % (1000 * 60)) / 1000);
+                
+                document.getElementById("timer-days").innerHTML = days + "<span class='label'>:</span>";
+
+                document.getElementById("timer-hours").innerHTML= ("0" + hours).slice(-2) +"<span class='label'>:</span>";
+
+                document.getElementById("timer-mins").innerHTML= ("0" + mins).slice(-2) + "<span class='label'>:</span>";
+
+                document.getElementById("timer-secs").innerHTML= ("0" + secs).slice(-2) + "<span class='label'></span>";
+            
+            }
+
+
+        }, 1000);
+    }
+
     this.render = function() {
         
         var e;
@@ -458,6 +506,7 @@ function MainLevel(foreignRenderer){
         //fps camera
         var fps_camera =new FirstPersonCamera(); 
         oThis.camera = fps_camera.camera;
+        oThis.camera.add(oThis.environment.mesh);
         scene.add(fps_camera.collider);
         //oThis.fps = fps.camera;
         oThis.updatable_assets.push(fps_camera);
@@ -530,12 +579,10 @@ function MainLevel(foreignRenderer){
 
     
     function createEnemies(){
-        for (var i = 0; i < 20; i ++){
-            var p = Math.floor(Math.random() * 1000);
+        for (var i = 0; i < 50; i ++){
+            
             var enemy = new Enemy(id);
-            enemy.mesh.position.set(p,0,p);
             oThis.updatable_assets.push(enemy);
-            scene.add(enemy.mesh);
             id += 1;
         }
     }
@@ -544,73 +591,74 @@ function MainLevel(foreignRenderer){
         //We readd the mesh
         loader = new THREE.OBJLoader();
 
-        loader.load('assets/models/torre1.obj', function(object){
+        var mapLoaded = false;
+        var map = undefined;
 
-            //mesh file may contain many meshes
-            //In this cas it only contaons one
-            // var box = 10;
-            // var i = 0;
-            // console.log(object);
-            // object.traverse(function(child){      //Traverse gets through all meshes applying the callbacl
-            //     if(child instanceof THREE.Mesh){
-            //         child.material = material;
-            //         chloaderild.receiveShadow = true;
-            //         child.castShadow = true;
-            //         head = child;
-                    
-            //         console.log(child);                    
-            //         var v = new THREE.Vector3();
-            //         v.copy(child.position);
-            //         child.localToWorld(v);
-            //         child.parent.worldToLocal(v);
-            //         console.log(v);
+        loader.load("assets/models/map2.obj", function(object){
+            map = object.children[0];
+            loader.load('assets/models/torre1.obj', function(object){
 
-            //         if(i < box && child.name != "hide"){
-            //             i++;
-            //             var element = new Physijs.BoxMesh(child.geometry,new THREE.MeshBasicMaterial(),0);
-            //             element.position = 
-            //             scene.add(element);
-            //         }
-                    
-            //     }
-            // });
-            console.log(object);
-            object = object.children[0];
-            var tamanio = 3;
-            var geometry = object.geometry;
-            var loader = new THREE.TextureLoader();
-            var colorTexture = loader.load( "assets/images/DefaultMaterial_Base_Color.png" );
-
-            var normalTexture = loader.load("assets/images/DefaultMaterial_Normal.png")
-            var bumpTexture = loader.load("assets/images/DefaultMaterial_Height.png")
-
-            var material = new THREE.MeshPhongMaterial({
-                color: 0x4286f4,
-                map:colorTexture,
-                normalMap:normalTexture,
-                bumpMap:bumpTexture,
-            });
-            var towerList = [];
-            function random(min,max) // min and max included
-            {
+                //console.log(object);
+                object = object.children[0];
+                var tamanio = 3;
+                var geometry = object.geometry;
+                var loader = new THREE.TextureLoader();
+                var colorTexture = loader.load( "assets/images/DefaultMaterial_Base_Color.png" );
+    
+                var normalTexture = loader.load("assets/images/DefaultMaterial_Normal.png")
+                var bumpTexture = loader.load("assets/images/DefaultMaterial_Height.png")
+    
+                var material = new THREE.MeshPhongMaterial({
+                    color: 0x4286f4,
+                    map:colorTexture,
+                    normalMap:normalTexture,
+                    bumpMap:bumpTexture,
+                });
+                var towerList = [];
                 
-                var a = Math.floor(Math.random()*(max-min+1)+min);
-                if(Math.random()>0.5){
-                    a*=-1
-                }
-                return a;
-            }
 
-            var towers = 100;
-            for(var i = 0; i < towers; i++){
-                var element = new Physijs.BoxMesh(geometry,material,0);
-                element.position.set(random(20,150),0,random(20,150));
-                element.rotation.set(0,random(0,360),0)
-                //element.position.set(10,0,10);
-                scene.add(element);
-            }
-            
+                var positions =  map.geometry.attributes["position"].array;
+                let ptCout = positions.length / 3;
+                var towers = 100;
+                // for (let i = 0; i < ptCout && i < towers; i++)
+                // {
+                //     let v = new THREE.Vector3(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]);
+                //     var element = new Physijs.BoxMesh(geometry,material,0);
+                //     element.position.set(v.x,30,v.z);
+                //     element.rotation.set(0,random(0,360),0)
+                //     scene.add(element);
+                
+                // }
+
+                var position = map.geometry.attributes.position;
+                var vector = new THREE.Vector3();
+                var addedVectors = [];
+
+                for ( let i = 0, l = position.count; i < l; i ++ ){
+                    
+                    vector = new THREE.Vector3();
+                    vector.fromBufferAttribute( position, i );
+                    vector.applyMatrix4( map.matrixWorld );
+
+                    v = vector;
+                    if (!inArray(v,addedVectors)){
+                        var element = new Physijs.BoxMesh(geometry,material,0);
+                        element.position.set(v.x,30,v.z);
+                        element.rotation.set(0,random(0,360),0);
+                        scene.add(element);
+                        addedVectors.push(v);
+                    }
+                    
+                
+                }
+
+                
+            });
+
         });
 
     }
+
+    createEnemies();
+    this.startLevel();
 }

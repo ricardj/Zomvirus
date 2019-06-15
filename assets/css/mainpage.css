@@ -1,11 +1,13 @@
 body {
     background-color: black;
     margin: 0px;
+    
 }
 
 div#interface {
     position:absolute;
     width: 100%;
+
 }
 
 .grid-container {
@@ -37,4 +39,14 @@ div#interface {
     COLOR: blue; 
     TEXT-DECORATION: none; 
     font-weight: none;
+}
+
+.counter{
+    grid-column: 2;
+    grid-row: 1;
+    background-color: transparent;
+    font-family: 'Orbitron', sans-serif;
+    color: white;
+    font-size: 2.0em;
+    text-align: center;
 }
