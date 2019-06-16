@@ -21,7 +21,6 @@ var gameOver = new Audio();
 enemyDeath.src = "assets/sounds/enemyDeath.mp3";
 enemyNear.src ="assets/sounds/enemyNear.mp3";
 gameOver.src = "assets/sounds/gameOver.mp3";
-//shot.src = "assets/sounds/shot.mp3";
 
 
 function inArray(vector,vectorArray)
@@ -90,6 +89,7 @@ function Weapon(){
         //oThis.mesh.position.x = pos.x;
         //oThis.mesh.updateMatrix();
         oThis.mesh = object;
+        oThis.mesh.remove = false;
         scene.add(oThis.mesh);
 
     } );
@@ -296,6 +296,10 @@ function FirstPersonCamera(){
             oThis.weapon.update();
             oThis.weapon.mesh.position.set(oPos.x + dir.x * 2, oPos.y-0.5 + dir.y*2, oPos.z + dir.z *2);
         }
+
+        if(oPos.y <=  -60){
+            gameOverFunction();
+        }
     }
 
 }
@@ -326,9 +330,10 @@ function Enemy(id) {
 
         oThis.mesh = new Physijs.BoxMesh(geometry, material, 3000);
         oThis.mesh.name = "enemy";
-        oThis.mesh.lives = 3;
+        oThis.mesh.lives = 2;
         oThis.mesh.id = id;
         oThis.mesh.position.set(random(20,500),10,random(20,500));
+        oThis.mesh.remove = true;
         scene.add(oThis.mesh);
         oThis.mesh.addEventListener( 'collision', oThis.handleCollision );
     });
@@ -341,6 +346,7 @@ function Enemy(id) {
             oThis.mesh.lives -=1;
             if(oThis.mesh.lives <= 0){
                 scene.remove(oThis.mesh);
+                scene.remove(other_object);
                 enemyDeath.play();
             }
         }
@@ -442,7 +448,8 @@ function BulletManager(level){
         bullet.receiveShadow = true;
 
 
-        this.bullets.push(bullet);                
+        this.bullets.push(bullet);              
+        bullet.remove = true;  
         scene.add(bullet);
         var speed = 1000;
         bullet.setLinearVelocity( new THREE.Vector3( dir.x * speed, dir.y * speed , dir.z *speed ) ); 
@@ -507,7 +514,7 @@ function MainLevel(foreignRenderer){
     createPlatform();
     createFloor();
     createBulletManager();
-
+    createColliderBorders();
     this.startLevel = function() {
 
         createEnemies();
@@ -556,6 +563,17 @@ function MainLevel(foreignRenderer){
             scene.updateMatrixWorld(true);
             scene.simulate();
             this.renderer.render(scene,this.camera);
+        }else{
+            var e;
+            for(e in this.updatable_assets){
+                this.updatable_assets[e] = undefined;
+            }
+            for (let i = scene.children.length - 1; i >= 0; i--) {
+                if(scene.children[i].remove == true)
+                    scene.remove(scene.children[i]);
+            }
+            this.renderer.renderLists.dispose();
+            //stop = false;
         }
     }
 
@@ -567,46 +585,60 @@ function MainLevel(foreignRenderer){
     }
 
     function createCamera (){
-  
-        //Free camera
-        /*
-            oThis.camera = new THREE.PerspectiveCamera(
-            60,
-            window.innerWidth/ window.innerHeight,
-            0.1, 1000);
-            //oThis.camera.rotation.order = "YXZ"; // this is not the default
-
-            oThis.camera.position.x = 0;
-            oThis.camera.position.y = 10;
-            oThis.camera.position.z = 0;
-        
-            oThis.camera.lookAt( oThis.scene.position );
-
-            //camera 2
-            // Orbit Controls >
-            var controls = new THREE.OrbitControls( oThis.camera );
-            // I prefer to swap the mouse controls, but most examples out there don't:
-            controls.mouseButtons = {
-                ORBIT: THREE.MOUSE.RIGHT,
-                ZOOM: THREE.MOUSE.MIDDLE,
-                PAN: THREE.MOUSE.LEFT
-            };
-            controls.enableDamping = true; // For that slippery Feeling
-            controls.dampingFactor = 0.12; // Needs to call update on render loop 
-            controls.rotateSpeed = 0.08; // Rotate speed
-            controls.autoRotate = false; // turn this guy to true for a spinning camera
-            controls.autoRotateSpeed = 0.08; // 30
-            controls.maxPolarAngle = Math.PI/2; // Don't let to go below the ground
-            // < Orbit Controls
-        */
 
         //fps camera
         var fps_camera =new FirstPersonCamera(); 
         oThis.camera = fps_camera.camera;
         oThis.camera.add(oThis.environment.mesh);
+        fps_camera.collider.remove = false;
         scene.add(fps_camera.collider);
         //oThis.fps = fps.camera;
         oThis.updatable_assets.push(fps_camera);
+    }
+
+    function createColliderBorders(){
+        //No pass border limits
+
+        var geometry0 = new THREE.CubeGeometry( 4000, 1, 4000);
+        var geometry1 = new THREE.CubeGeometry( 4000, 2000, 1);
+        var geometry2 = new THREE.CubeGeometry( 2000, 4000, 1);
+        var geometry3 = new THREE.CubeGeometry( 1, 4000, 2000);
+        var geometry4 = new THREE.CubeGeometry( 1, 4000, 2000);
+       
+        var material = new THREE.MeshBasicMaterial( {color: 0x00ff00,
+            transparent: true, opacity: 0} );
+
+        var element0 = new Physijs.BoxMesh(geometry0,material,0);
+        var element1 = new Physijs.BoxMesh(geometry1,material,0);
+        var element2 = new Physijs.BoxMesh(geometry2,material,0);
+        var element3 = new Physijs.BoxMesh(geometry3,material,0);
+        var element4 = new Physijs.BoxMesh(geometry4,material,0);
+
+        element0.position.set(0,-100,0);
+        element1.position.set(0,0,-1000);
+        element2.position.set(0,0,1000);
+        element3.position.set(-1000,0,0);
+        element4.position.set(1000,0,0);
+
+        element0.addEventListener( 'collision', this.checkCollision );
+        element1.addEventListener( 'collision', this.checkCollision );
+        element2.addEventListener( 'collision', this.checkCollision );
+        element3.addEventListener( 'collision', this.checkCollision );
+        element4.addEventListener( 'collision', this.checkCollision );
+
+        scene.add(element0);
+        scene.add(element1);
+        scene.add(element2);
+        scene.add(element3);
+        scene.add(element4);
+
+        this.checkCollision = function( other_object, relative_velocity, relative_rotation, contact_normal ) {
+            // `this` has collided with `other_object` with an impact speed of `relative_velocity` and a rotational force of `relative_rotation` and at normal `contact_normal`
+            //console.log("The mesh is colliding");
+            if(other_object.name ==  "bullet"){
+                scene.remove(other_object)
+            }
+        }
     }
       
     function createPlatform(){
@@ -630,7 +662,22 @@ function MainLevel(foreignRenderer){
         );
       
         platform.rotation.x = Math.PI / 2;
-      
+        platform.remove = false;
+
+        this.checkCollision = function( other_object, relative_velocity, relative_rotation, contact_normal ) {
+            // `this` has collided with `other_object` with an impact speed of `relative_velocity` and a rotational force of `relative_rotation` and at normal `contact_normal`
+            //console.log("The mesh is colliding");
+            if(other_object.name ==  "bullet"){
+                //alert("I will find you");
+                //The player is dead.
+                scene.remove(other_object);
+    
+            }
+        }
+
+        platform.addEventListener( 'collision', this.checkCollision );
+
+        
         scene.add(platform);
     }
       
@@ -653,10 +700,14 @@ function MainLevel(foreignRenderer){
 
 
         for(var i = 0; i < 4; i++){
+            lights[i].remove = false;
+
             scene.add(lights[i]);
         }
       
         var ambientLight = new THREE.AmbientLight(0x000000);
+
+        ambientLight.remove = false;
         scene.add(ambientLight);
     }
       
@@ -735,6 +786,23 @@ function MainLevel(foreignRenderer){
                         var element = new Physijs.BoxMesh(geometry,material,0);
                         element.position.set(v.x,30,v.z);
                         element.rotation.set(0,random(0,360),0);
+                        element.remove = false;
+
+
+                        this.checkCollision = function( other_object, relative_velocity, relative_rotation, contact_normal ) {
+                            // `this` has collided with `other_object` with an impact speed of `relative_velocity` and a rotational force of `relative_rotation` and at normal `contact_normal`
+                            //console.log("The mesh is colliding");
+                            if(other_object.name ==  "bullet"){
+                                //alert("I will find you");
+                                //The player is dead.
+                                scene.remove(other_object);
+                    
+                            }
+                        }
+                
+                        element.addEventListener( 'collision', this.checkCollision );
+                        
+
                         scene.add(element);
                         addedVectors.push(v);
                     }
