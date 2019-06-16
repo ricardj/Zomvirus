@@ -9,6 +9,7 @@ var introLevel;
 var mainLevel;
 
 var soundtrack = new Audio();
+soundtrack.src = "assets/sounds/ballistic.mp3";
 var soundtrackPlaying = false;
 var select1 = new Audio();
 select1.src = "assets/sounds/select1.mp3";
@@ -43,7 +44,8 @@ function createRenderer() {
 
 function init() {
 	
-	
+	alert("Click here to activate the sound.");
+	soundtrack.play();
 	createRenderer();
 	//createIntroLevel();
 	introLevel = new IntroLevel(renderer);
@@ -79,8 +81,7 @@ document.getElementById('new_game').onclick = function() {
 document.getElementsByTagName("body")[0].onclick = function (){
 	
 	if(!soundtrackPlaying){
-		soundtrack.src = "assets/sounds/ballistic.mp3";
-		soundtrack.play();
+		
 		soundtrackPlaying = true;
 	}
 	
