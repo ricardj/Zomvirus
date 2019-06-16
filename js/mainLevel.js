@@ -451,7 +451,7 @@ function BulletManager(level){
         this.bullets.push(bullet);              
         bullet.remove = true;  
         scene.add(bullet);
-        var speed = 1000;
+        var speed = 100;
         bullet.setLinearVelocity( new THREE.Vector3( dir.x * speed, dir.y * speed , dir.z *speed ) ); 
 
     }
